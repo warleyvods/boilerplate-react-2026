@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚛️ Boilerplate React 2026
 
-## Getting Started
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-First, run the development server:
+Um boilerplate moderno e completo para frontend **Next.js 15+** (App Router), projetado para integrar perfeitamente com o **Boilerplate Spring 2026**.
+
+---
+
+## 📋 Índice
+
+- [✨ Features](#-features)
+- [🛠️ Stack Tecnológica](#️-stack-tecnológica)
+- [🚀 Quick Start](#-quick-start)
+- [🔌 Integração Backend](#-integração-backend)
+- [📁 Estrutura](#-estrutura)
+- [🎨 Design System](#-design-system)
+
+---
+
+## ✨ Features
+
+- **⚡ Next.js 15 App Router**: A última word em roteamento e server components.
+- **📘 TypeScript**: Tipagem estática rigorosa para DX superior.
+- **🎨 CSS Modules**: Estilização flexível e performática (Vanilla CSS).
+- **🔒 Integração de Auth**: Preparado para JWT/OAuth2 com o backend Spring.
+- **📱 Responsivo**: Layout mobile-first.
+
+---
+
+## 🛠️ Stack Tecnológica
+
+| Tecnologia | Descrição |
+|------------|-----------|
+| **Next.js** | Framework React de Produção |
+| **React** | Biblioteca de UI |
+| **TypeScript** | Superset JavaScript |
+| **ESLint** | Linter de código |
+
+---
+
+## 🚀 Quick Start
+
+### Pré-requisitos
+
+- Node.js 20+
+- Backend rodando (opcional, mas recomendado)
+
+### 1️⃣ Instalação
+
+```bash
+npm install
+# ou
+yarn
+# ou
+pnpm install
+```
+
+### 2️⃣ Configuração
+
+O arquivo `.env.local` já vem pré-configurado:
+
+```properties
+NEXT_PUBLIC_API_URL=http://localhost:8080
+```
+
+### 3️⃣ Rodando
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🔌 Integração Backend
 
-## Learn More
+Este frontend foi desenhado para consumir as APIs do `boilerplate-spring-2026`.
 
-To learn more about Next.js, take a look at the following resources:
+### Endpoints Principais
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Login**: `POST ${NEXT_PUBLIC_API_URL}/v1/auth/login`
+- **User Profile**: `GET ${NEXT_PUBLIC_API_URL}/v1/users/me` (com Bearer Token)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📁 Estrutura
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/              # App Router Pages & Layouts
+│   ├── globals.css   # Estilos globais
+│   ├── layout.tsx    # Root layout
+│   └── page.tsx      # Home page
+├── components/       # Componentes Reutilizáveis (Atomic Design)
+├── lib/              # Utilitários e configurações
+├── hooks/            # Custom Hooks
+└── services/         # Camada de API (Fetch/Axios)
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+<p align="center">
+  Feito com ⚛️ para a comunidade React
+</p>
