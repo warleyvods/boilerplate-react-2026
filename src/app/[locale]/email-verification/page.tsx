@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { CheckCircle, Clock, ArrowLeft, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { Meteors } from '@/components/magicui/meteors';

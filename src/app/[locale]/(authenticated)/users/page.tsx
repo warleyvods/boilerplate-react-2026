@@ -22,7 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import { PageContainer } from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DataTable } from '@/components/ui/data-table'; // Make sure this path is correct based on where we created it
+import { DataTable, type DataTableFeatures } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import {
     DropdownMenu,
@@ -123,7 +123,7 @@ export default function UsersPage() {
 
 
     // Colunas da Tabela
-    const columns = useMemo<ColumnDef<User>[]>(
+    const columns = useMemo<ColumnDef<DataTableFeatures, User>[]>(
         () => [
             {
                 accessorKey: 'name',

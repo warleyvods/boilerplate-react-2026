@@ -6,7 +6,7 @@ import { useLogin } from '@/hooks/auth';
 import { loginSchema, LoginFormData } from '@/lib/schemas';
 import { LogIn, ArrowLeft } from 'lucide-react';
 import { Button, Field, PasswordField } from '@/components/ui';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { RainbowButton } from '@/components/magicui/rainbow-button';

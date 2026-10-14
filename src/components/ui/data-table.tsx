@@ -3,16 +3,32 @@
 import {
     ColumnDef,
     ColumnFiltersState,
+    ColumnVisibilityState,
+    RowData,
+    RowSelectionState,
     SortingState,
-    VisibilityState,
+    columnFilteringFeature,
+    columnVisibilityFeature,
+    createFilteredRowModel,
+    createPaginatedRowModel,
+    createSortedRowModel,
+    filterFn_arrIncludes,
+    filterFn_equals,
+    filterFn_inNumberRange,
+    filterFn_includesString,
+    filterFn_weakEquals,
     flexRender,
-    getCoreRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useReactTable,
+    rowPaginationFeature,
+    rowSelectionFeature,
+    rowSortingFeature,
+    sortFn_alphanumeric,
+    sortFn_basic,
+    sortFn_datetime,
+    sortFn_text,
+    tableFeatures,
+    useTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -34,9 +50,42 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
+// Features registradas explicitamente (TanStack Table v9). As funções de
+// filtro/ordenação cobrem os nomes que o modo "auto" escolhe pelo tipo do valor.
+const dataTableFeatures = tableFeatures({
+    columnFilteringFeature,
+    columnVisibilityFeature,
+    rowSortingFeature,
+    rowPaginationFeature,
+    rowSelectionFeature,
+    filteredRowModel: createFilteredRowModel(),
+    sortedRowModel: createSortedRowModel(),
+    paginatedRowModel: createPaginatedRowModel(),
+    filterFns: {
+        includesString: filterFn_includesString,
+        inNumberRange: filterFn_inNumberRange,
+        equals: filterFn_equals,
+        arrIncludes: filterFn_arrIncludes,
+        weakEquals: filterFn_weakEquals,
+    },
+    sortFns: {
+        alphanumeric: sortFn_alphanumeric,
+        text: sortFn_text,
+        basic: sortFn_basic,
+        datetime: sortFn_datetime,
+    },
+});
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[];
+export type DataTableFeatures = typeof dataTableFeatures;
+
+/** Classes opcionais por coluna, lidas de `columnDef.meta`. */
+type DataTableColumnMeta = {
+    headerClassName?: string;
+    cellClassName?: string;
+};
+
+interface DataTableProps<TData extends RowData> {
+    columns: ColumnDef<DataTableFeatures, TData>[];
     data: TData[];
     searchKey?: string;
     searchPlaceholder?: string;
@@ -58,7 +107,7 @@ interface DataTableProps<TData, TValue> {
     hidePagination?: boolean;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
     columns,
     data,
     searchKey,
@@ -69,21 +118,18 @@ export function DataTable<TData, TValue>({
     hideToolbar = false,
     pagination,
     hidePagination,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-    const [rowSelection, setRowSelection] = useState({});
+    const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-    const table = useReactTable({
+    const table = useTable({
+        features: dataTableFeatures,
         data,
         columns,
         onSortingChange: setSorting,
         onColumnFiltersChange: setColumnFilters,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
         onColumnVisibilityChange: setColumnVisibility,
         onRowSelectionChange: setRowSelection,
         state: {
@@ -98,6 +144,7 @@ export function DataTable<TData, TValue>({
         // Se não temos paginação externa e hidePagination é true, mostrar todos os dados
         initialState: hidePagination && !pagination ? {
             pagination: {
+                pageIndex: 0,
                 pageSize: 99999, // Mostra todos os dados quando não há paginação
             },
         } : undefined,
@@ -184,7 +231,7 @@ export function DataTable<TData, TValue>({
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
-                                    const meta = header.column.columnDef.meta as any;
+                                    const meta = header.column.columnDef.meta as DataTableColumnMeta | undefined;
                                     return (
                                         <TableHead key={header.id} className={meta?.headerClassName}>
                                             {header.isPlaceholder
@@ -218,7 +265,7 @@ export function DataTable<TData, TValue>({
                                     data-state={row.getIsSelected() && "selected"}
                                 >
                                     {row.getVisibleCells().map((cell) => {
-                                        const meta = cell.column.columnDef.meta as any;
+                                        const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
                                         return (
                                             <TableCell key={cell.id} className={meta?.cellClassName}>
                                                 {flexRender(
