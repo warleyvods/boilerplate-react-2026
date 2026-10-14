@@ -1,22 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { api } from "@/lib/api";
-import { queryClient } from "@/lib/query-client";
+import { api, getApiErrorMessage, type ApiErrorBody } from "@/lib/api";
 import { QueryKeys } from "@/lib/query-keys";
 import { LoginFormData } from "@/lib/schemas";
 import { useUserStore } from "@/stores/useUserStore";
 import { useTranslations } from "next-intl";
 
-type ErrorType = {
-    title: string;
-    details: string;
-    message?: string;
-};
-
 export function useLogin(onSuccess?: () => void, onError?: () => void) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const setAuthenticated = useUserStore((state) => state.setAuthenticated);
     const setUser = useUserStore((state) => state.setUser);
     const logout = useUserStore((state) => state.logout);
@@ -56,18 +50,11 @@ export function useLogin(onSuccess?: () => void, onError?: () => void) {
             onSuccess?.();
             router.push('/dashboard');
         },
-        onError: (error: AxiosError<ErrorType>, variables) => {
+        onError: (error: AxiosError<ApiErrorBody>, variables) => {
             onError?.();
 
-            console.log('🔴 [Login Error]', {
-                status: error.response?.status,
-                title: error.response?.data?.title,
-                details: error.response?.data?.details,
-                fullError: error.response?.data
-            });
-
             if (error.response?.status === 401) {
-                const errorMessage = error.response?.data?.details || "";
+                const errorMessage = getApiErrorMessage(error.response?.data);
                 const errorTitle = error.response?.data?.title || "";
 
                 if (errorTitle === "Email Not Verified" ||
@@ -98,15 +85,14 @@ export function useLogin(onSuccess?: () => void, onError?: () => void) {
                     });
                 }
             } else if (error.response?.status === 429) {
-                const rateLimitData = error.response?.data;
-                const errorMessage = rateLimitData?.message ||
+                const errorMessage = getApiErrorMessage(error.response?.data) ||
                     "Muitas tentativas de login. Tente novamente mais tarde.";
                 toast.error(t('manyAttempts'), {
                     description: errorMessage,
                     duration: 5000,
                 });
             } else {
-                const errorMessage = error.response?.data?.details ||
+                const errorMessage = getApiErrorMessage(error.response?.data) ||
                     "Um erro aconteceu ao tentar concluir sua solicitação, tente novamente mais tarde.";
                 toast.error(t('loginError'), {
                     description: errorMessage,

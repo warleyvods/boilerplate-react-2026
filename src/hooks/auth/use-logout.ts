@@ -1,15 +1,15 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { api, setLoggingOut } from '@/lib/api';
-import { queryClient } from '@/lib/query-client';
 import { useUserStore } from '@/stores/useUserStore';
 import { useTranslations } from 'next-intl';
 
 export function useLogout() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const logout = useUserStore((state) => state.logout);
     const t = useTranslations('Auth.Logout');
 
@@ -20,9 +20,8 @@ export function useLogout() {
 
             try {
                 await api.post('/v1/auth/logout');
-            } catch (error) {
+            } catch {
                 // Ignora erros no logout - vamos limpar mesmo assim
-                console.log('[Logout] Erro ignorado:', error);
             }
         },
         onSuccess: () => {

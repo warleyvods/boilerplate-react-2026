@@ -1,5 +1,26 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { getApiUrlDynamic } from './api-config';
+
+/**
+ * Corpo de erro da API. O backend responde ProblemDetail (RFC 9457: type, title,
+ * status, detail, instance) mantendo `message` como propriedade extra; versões
+ * antigas mandavam `details`/`error`. Os campos opcionais cobrem os dois formatos.
+ */
+export interface ApiErrorBody {
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
+    instance?: string;
+    message?: string;
+    details?: string;
+    error?: string;
+}
+
+/** Mensagem legível do erro: `message` || `detail` || `details` || `error`. */
+export function getApiErrorMessage(data: ApiErrorBody | undefined | null): string {
+    return data?.message || data?.detail || data?.details || data?.error || '';
+}
 
 let apiInstance: AxiosInstance | null = null;
 let isRefreshing = false;
@@ -99,19 +120,17 @@ function createApiInstance(): AxiosInstance {
 
                 // Se estamos em uma página pública, não tenta refresh
                 if (publicRoutes.includes(currentPath)) {
-                    console.log('📍 [API] Em rota pública - não tentará refresh');
                     return Promise.reject(error);
                 }
 
                 // Se já estamos tentando fazer refresh do endpoint de refresh
                 if (originalRequest.url?.includes('/auth/refresh')) {
-                    const errorMessage = error.response?.data?.message || error.response?.data?.error || '';
+                    const errorMessage = getApiErrorMessage(error.response?.data);
                     const isTokenReuse = errorMessage.toLowerCase().includes('token') &&
                         (errorMessage.toLowerCase().includes('reuse') ||
                             errorMessage.toLowerCase().includes('invalid'));
 
                     if (isTokenReuse) {
-                        console.log('🔄 [API] Token reuse detectado - outra requisição já renovou o token');
                         return Promise.reject(error);
                     }
 
@@ -121,12 +140,10 @@ function createApiInstance(): AxiosInstance {
 
                 // Se já está fazendo refresh, adiciona à fila
                 if (isRefreshing) {
-                    console.log('⏳ [API] Refresh em andamento, adicionando à fila...');
                     return new Promise((resolve, reject) => {
                         failedQueue.push({ resolve, reject, config: originalRequest });
                     })
                         .then(() => {
-                            console.log('🔄 [API] Fila liberada, retentando requisição...');
                             return instance(originalRequest);
                         })
                         .catch((err) => Promise.reject(err));
@@ -145,8 +162,6 @@ function createApiInstance(): AxiosInstance {
                         return Promise.reject(new Error('CSRF token not found'));
                     }
 
-                    console.log('🔄 [API] Iniciando refresh token...');
-
                     // Adiciona timeout para o refresh token
                     const refreshRequest = Promise.race([
                         instance.post('/v1/auth/refresh'),
@@ -158,7 +173,6 @@ function createApiInstance(): AxiosInstance {
                     const refreshResponse = await refreshRequest as AxiosResponse;
 
                     if (refreshResponse.status === 200) {
-                        console.log('✅ [API] Refresh token bem-sucedido');
                         processQueue(null);
 
                         // Notifica outras abas que o token foi atualizado
@@ -167,17 +181,13 @@ function createApiInstance(): AxiosInstance {
                         // Tenta novamente a requisição original
                         return instance(originalRequest);
                     } else {
-                        console.log('❌ [API] Refresh token falhou com status:', refreshResponse.status);
                         processQueue(new Error('Refresh failed'), null);
                         handleLogout();
                         throw new Error('Session expired - refresh token invalid');
                     }
                 } catch (refreshError) {
                     const errorStatus = (refreshError as { response?: { status?: number } })?.response?.status;
-                    const errorMessage = (refreshError as { response?: { data?: { message?: string; error?: string } } })?.response?.data?.message ||
-                        (refreshError as { response?: { data?: { message?: string; error?: string } } })?.response?.data?.error || '';
-
-                    console.log('❌ [API] Erro no refresh token:', errorStatus || (refreshError as Error).message);
+                    const errorMessage = getApiErrorMessage((refreshError as AxiosError<ApiErrorBody>)?.response?.data);
 
                     // Verifica se é erro de token reuse
                     const isTokenReuse = (errorStatus === 401 || errorStatus === 400) &&
@@ -186,7 +196,6 @@ function createApiInstance(): AxiosInstance {
                                 errorMessage.toLowerCase().includes('invalid')));
 
                     if (isTokenReuse) {
-                        console.log('🔄 [API] Token reuse detectado durante refresh - tentando novamente com novo token');
                         await new Promise(resolve => setTimeout(resolve, 100));
                         processQueue(null);
                         return instance(originalRequest);

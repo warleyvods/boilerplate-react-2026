@@ -14,6 +14,8 @@ import { ShineBorder } from '@/components/magicui/shine-border';
 import { Meteors } from '@/components/magicui/meteors';
 import { SparklesText } from '@/components/magicui/sparkles-text';
 import { OAuth2LoginSection } from '@/components/oauth2';
+import type { AxiosError } from 'axios';
+import { getApiErrorMessage, type ApiErrorBody } from '@/lib/api';
 
 import { useTranslations } from 'next-intl';
 
@@ -201,8 +203,8 @@ function LoginContent() {
                             >
                                 <p className="text-sm text-red-500">
                                     {(() => {
-                                        const axiosError = error as { response?: { data?: { details?: string; title?: string }; status?: number } };
-                                        const errorMessage = axiosError?.response?.data?.details || "";
+                                        const axiosError = error as AxiosError<ApiErrorBody>;
+                                        const errorMessage = getApiErrorMessage(axiosError?.response?.data);
                                         const errorTitle = axiosError?.response?.data?.title || "";
 
                                         if (errorTitle === "Email Not Verified" ||

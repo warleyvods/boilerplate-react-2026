@@ -69,7 +69,6 @@ export function getApiUrlDynamic(): string {
     // Cliente - usa cache
     if (!cachedApiUrl) {
         cachedApiUrl = getApiUrl();
-        console.log('[API Config] Detected API URL:', cachedApiUrl);
     }
     return cachedApiUrl;
 }

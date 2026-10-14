@@ -10,6 +10,8 @@ import { SparklesText } from '@/components/magicui/sparkles-text';
 import { RainbowButton } from '@/components/magicui/rainbow-button';
 import { toast } from 'sonner';
 import { useResendEmailVerification } from '@/hooks/auth/use-resend-email-verification';
+import type { AxiosError } from 'axios';
+import { getApiErrorMessage, type ApiErrorBody } from '@/lib/api';
 
 function EmailVerificationContent() {
   const router = useRouter();
@@ -53,8 +55,8 @@ function EmailVerificationContent() {
         setCanResend(false);
         toast.success('Email de verificação reenviado com sucesso!');
       },
-      onError: (error: any) => {
-        const errorMessage = error?.response?.data?.details || 
+      onError: (error: AxiosError<ApiErrorBody>) => {
+        const errorMessage = getApiErrorMessage(error?.response?.data) || 
                            error?.message || 
                            'Erro ao reenviar email. Tente novamente.';
         toast.error(errorMessage);

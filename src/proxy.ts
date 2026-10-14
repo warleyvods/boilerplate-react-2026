@@ -6,43 +6,41 @@ import { routing } from './i18n/routing';
 
 const handleI18n = createMiddleware(routing);
 
-// Cache de tokens verificados
-const tokenCache = new Map<string, { valid: boolean; expires: number }>();
-
 function getApiUrl(): string {
     return process.env.NODE_ENV === 'production'
         ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080')
         : 'http://localhost:8080';
 }
 
-function validateToken(token: string): { valid: boolean; expires: number } {
-    const cached = tokenCache.get(token);
-    if (cached && Date.now() < cached.expires - 60000) {
-        return cached;
-    }
-
+/**
+ * Lê o `exp` do access token SEM verificar a assinatura.
+ *
+ * Isto NÃO é autorização: serve só como dica para decidir redirects (evitar
+ * mandar para /dashboard quem tem um token já expirado, ou tentar o refresh
+ * antes de renderizar). Quem decide se o token vale é a API, que valida a
+ * assinatura em toda requisição.
+ */
+function looksUnexpired(token: string): boolean {
     try {
-        const decoded = jwtDecode(token);
-        const expires = ((decoded as { exp?: number }).exp || 0) * 1000;
-        const valid = expires > Date.now();
-        const result = { valid, expires };
-        tokenCache.set(token, result);
-
-        if (tokenCache.size > 100) {
-            const now = Date.now();
-            for (const [key, value] of tokenCache.entries()) {
-                if (value.expires < now) {
-                    tokenCache.delete(key);
-                }
-            }
-        }
-        return result;
+        const { exp } = jwtDecode<{ exp?: number }>(token);
+        return !!exp && exp * 1000 > Date.now();
     } catch {
-        return { valid: false, expires: 0 };
+        return false;
     }
 }
 
-export async function middleware(request: NextRequest) {
+/**
+ * Redirect que preserva o idioma. Com `localePrefix: 'never'` a URL não carrega
+ * o locale (ele vive no cookie NEXT_LOCALE), então basta repassar os cookies
+ * que o next-intl definiu nesta resposta.
+ */
+function redirectTo(path: string, request: NextRequest, i18nResponse: NextResponse) {
+    const response = NextResponse.redirect(new URL(path, request.url));
+    i18nResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+    return response;
+}
+
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // 1. Run I18n
@@ -64,7 +62,6 @@ export async function middleware(request: NextRequest) {
         '/', '/login', '/signup',
         '/forgot-password', '/reset-password',
         '/email-verification', '/verify-email',
-        '/api-debug',
     ];
 
     const oauthRoutes = [
@@ -75,37 +72,25 @@ export async function middleware(request: NextRequest) {
     const isPublic = publicRoutes.includes(pathWithoutLocale);
     const isOauth = oauthRoutes.some(route => pathWithoutLocale.startsWith(route));
 
-
     if (pathname.startsWith('/api/') || pathname.startsWith('/_next/') || pathname.includes('.')) {
-        return i18nResponse;
-    }
-
-    // API Debug é sempre público
-    if (pathname === '/api-debug' || pathname.startsWith('/api-debug/')) {
         return i18nResponse;
     }
 
     if (isOauth) return i18nResponse;
 
     if (isPublic) {
-        if (accessToken) {
-            const tokenInfo = validateToken(accessToken);
-            if (tokenInfo.valid) {
-                return NextResponse.redirect(new URL('/dashboard', request.url));
-            }
+        if (accessToken && looksUnexpired(accessToken)) {
+            return redirectTo('/dashboard', request, i18nResponse);
         }
         return i18nResponse;
     }
 
     if (!accessToken && !refreshToken) {
-        return NextResponse.redirect(new URL('/login', request.url));
+        return redirectTo('/login', request, i18nResponse);
     }
 
-    if (accessToken) {
-        const tokenInfo = validateToken(accessToken);
-        if (tokenInfo.valid) {
-            return i18nResponse;
-        }
+    if (accessToken && looksUnexpired(accessToken)) {
+        return i18nResponse;
     }
 
     if (refreshToken && csrfToken) {
@@ -128,14 +113,14 @@ export async function middleware(request: NextRequest) {
                 });
                 return i18nResponse;
             } else {
-                return NextResponse.redirect(new URL('/login', request.url));
+                return redirectTo('/login', request, i18nResponse);
             }
         } catch {
-            return NextResponse.redirect(new URL('/login', request.url));
+            return redirectTo('/login', request, i18nResponse);
         }
     }
 
-    return NextResponse.redirect(new URL('/login', request.url));
+    return redirectTo('/login', request, i18nResponse);
 }
 
 export const config = {

@@ -1,15 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, getApiErrorMessage, type ApiErrorBody } from '@/lib/api';
 import { ChangePasswordFormData } from '@/lib/schemas';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { AxiosError } from 'axios';
-
-interface BackendErrorResponse {
-    title?: string;
-    details?: string;
-    status?: number;
-}
 
 export function useChangePassword() {
     const t = useTranslations('Auth.Password');
@@ -27,9 +21,9 @@ export function useChangePassword() {
         onSuccess: () => {
             toast.success(t('success'));
         },
-        onError: (error: AxiosError<BackendErrorResponse>) => {
+        onError: (error: AxiosError<ApiErrorBody>) => {
             // Use backend error message if available, otherwise use generic message
-            const backendMessage = error.response?.data?.details;
+            const backendMessage = getApiErrorMessage(error.response?.data);
             if (backendMessage) {
                 toast.error(backendMessage);
             } else {

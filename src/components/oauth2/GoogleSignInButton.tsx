@@ -16,8 +16,6 @@ export function GoogleSignInButton({
     text = "Continuar com Google"
 }: GoogleSignInButtonProps) {
     const handleClick = () => {
-        console.log('🔥 GoogleSignInButton clicado!');
-
         if (!disabled) {
             initiateOAuth2Login('google');
         }

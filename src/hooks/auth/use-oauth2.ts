@@ -10,9 +10,6 @@ export function initiateOAuth2Login(provider: string) {
     const apiUrl = getApiUrlDynamic();
     const authUrl = `${apiUrl}/oauth2/authorization/${provider}`;
 
-    console.log('🔐 [OAuth2] Iniciando login com:', provider);
-    console.log('🔐 [OAuth2] Redirecionando para:', authUrl);
-
     // Redireciona para o backend que irá iniciar o fluxo OAuth2
     window.location.href = authUrl;
 }

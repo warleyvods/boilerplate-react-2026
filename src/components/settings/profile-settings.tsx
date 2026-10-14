@@ -86,7 +86,7 @@ export function ProfileSettings() {
         updateUser({
             ...user,
             ...data,
-            id: user.id.toString(),
+            id: user.id,
             login: user.login,
             admin: user.admin,
             active: user.active

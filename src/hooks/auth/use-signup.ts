@@ -2,19 +2,14 @@ import { useMutation } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { api } from '@/lib/api';
+import { api, getApiErrorMessage, type ApiErrorBody } from '@/lib/api';
 import { SignupFormData } from '@/lib/schemas';
-
-type ErrorType = {
-    title: string;
-    details: string;
-};
 
 export function useSignup(onSuccess?: () => void, onError?: () => void) {
     const router = useRouter();
 
     return useMutation({
-        mutationFn: async (signupData: SignupFormData): Promise<any> => {
+        mutationFn: async (signupData: SignupFormData) => {
             const response = await api.post('/v1/users/public/signup', signupData);
             return { user: response.data, email: signupData.email };
         },
@@ -23,11 +18,11 @@ export function useSignup(onSuccess?: () => void, onError?: () => void) {
             // Redireciona para página de verificação com o email
             router.push(`/email-verification?email=${encodeURIComponent(data.email)}`);
         },
-        onError: (error: AxiosError<ErrorType>) => {
+        onError: (error: AxiosError<ApiErrorBody>) => {
             onError?.();
 
             if (error.response?.status === 400) {
-                const details = error.response?.data?.details;
+                const details = getApiErrorMessage(error.response?.data);
                 const title = error.response?.data?.title;
 
                 // Erro específico de validação de senha
