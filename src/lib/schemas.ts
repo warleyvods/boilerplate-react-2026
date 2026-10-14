@@ -136,6 +136,7 @@ export type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export const updateUserSchema = z.object({
     name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+    login: z.string().optional(),
     email: z.string().email('Email inválido'),
     active: z.boolean().optional(),
     admin: z.boolean().optional(),

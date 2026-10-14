@@ -1,7 +1,7 @@
 'use client';
 
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Key } from 'lucide-react';
 import {
@@ -17,7 +17,7 @@ import { useSetPassword } from '@/hooks/users/use-set-password';
 import { User } from '@/lib/schemas';
 
 // Schema simplifying for Admin reset (no current password needed)
-const setPasswordSchema = z.object({
+export const setPasswordSchema = z.object({
     password: z.string().min(1, 'Nova senha é obrigatória').min(6, 'A senha deve ter no mínimo 6 caracteres'),
     confirmPassword: z.string().min(1, 'Confirmação de senha é obrigatória'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -25,6 +25,7 @@ const setPasswordSchema = z.object({
     path: ["confirmPassword"],
 });
 
+export type SetPasswordFormData = z.infer<typeof setPasswordSchema>;
 
 interface ChangePasswordModalProps {
     open: boolean;
@@ -33,33 +34,37 @@ interface ChangePasswordModalProps {
 }
 
 export function ChangePasswordModal({ open, onOpenChange, user }: ChangePasswordModalProps) {
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors, touchedFields, submitCount, isValid, isDirty },
+    } = useForm<SetPasswordFormData>({
+        resolver: zodResolver(setPasswordSchema),
+        mode: 'onChange',
+        defaultValues: {
+            password: '',
+            confirmPassword: '',
+        },
+    });
 
     const handleClose = () => {
         onOpenChange(false);
-        formik.resetForm();
+        reset();
     };
 
     const { mutate: setPassword, isPending } = useSetPassword(handleClose);
 
-    const formik = useFormik({
-        initialValues: {
-            password: '',
-            confirmPassword: '',
-        },
-        validationSchema: toFormikValidationSchema(setPasswordSchema),
-        validateOnBlur: true,
-        validateOnChange: true,
-        onSubmit: (values) => {
-            if (!user) return;
-            // Admin reset password
-            setPassword({ id: user.id, password: values.password });
-        },
-    });
+    const onSubmit = (values: SetPasswordFormData) => {
+        if (!user) return;
+        // Admin reset password
+        setPassword({ id: user.id, password: values.password });
+    };
 
     // Reset form when modal closes
     const handleOpenChange = (newOpen: boolean) => {
         if (!newOpen) {
-            formik.resetForm();
+            reset();
         }
         onOpenChange(newOpen);
     };
@@ -83,23 +88,20 @@ export function ChangePasswordModal({ open, onOpenChange, user }: ChangePassword
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={formik.handleSubmit} className="space-y-4 mt-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-6">
 
                     {/* Nova Senha */}
                     <div className="space-y-1">
                         <PasswordField
                             label="Nova Senha"
-                            name="password"
                             placeholder="Digite a nova senha"
-                            value={formik.values.password}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.errors.password}
-                            touched={formik.touched.password}
-                            submitCount={formik.submitCount}
+                            error={errors.password?.message}
+                            touched={touchedFields.password}
+                            submitCount={submitCount}
                             required
+                            {...register('password')}
                         />
-                        {!formik.errors.password && (
+                        {!errors.password && (
                             <p className="text-xs text-muted-foreground">
                                 Mínimo de 6 caracteres
                             </p>
@@ -109,15 +111,12 @@ export function ChangePasswordModal({ open, onOpenChange, user }: ChangePassword
                     {/* Confirmar Senha */}
                     <PasswordField
                         label="Confirmar Nova Senha"
-                        name="confirmPassword"
                         placeholder="Digite a senha novamente"
-                        value={formik.values.confirmPassword}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.errors.confirmPassword}
-                        touched={formik.touched.confirmPassword}
-                        submitCount={formik.submitCount}
+                        error={errors.confirmPassword?.message}
+                        touched={touchedFields.confirmPassword}
+                        submitCount={submitCount}
                         required
+                        {...register('confirmPassword')}
                     />
 
                     {/* Info */}
@@ -141,7 +140,7 @@ export function ChangePasswordModal({ open, onOpenChange, user }: ChangePassword
                         <Button
                             type="submit"
                             className="flex-1"
-                            disabled={isPending || !formik.isValid || !formik.dirty}
+                            disabled={isPending || !isValid || !isDirty}
                         >
                             {isPending ? (
                                 <>Alterando...</>

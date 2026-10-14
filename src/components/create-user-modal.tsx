@@ -1,7 +1,7 @@
 'use client';
 
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { UserPlus, Shield, ShieldCheck } from 'lucide-react';
 import {
     Dialog,
@@ -11,7 +11,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Field } from '@/components/ui/field';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useCreateUser } from '@/hooks/users/use-create-user';
@@ -22,18 +22,16 @@ interface CreateUserModalProps {
     onOpenChange: (open: boolean) => void;
 }
 
-// Helper para campo de formulário simples (já que Field não existe no Boilerplate ainda, ou se existe vou usar Input direto para garantir)
-const FormField = ({ label, error, ...props }: any) => (
-    <div className="space-y-2">
-        <Label>{label}</Label>
-        <Input {...props} />
-        {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
-);
-
 export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
-    const formik = useFormik<CreateUserRequest>({
-        initialValues: {
+    const {
+        register,
+        control,
+        handleSubmit,
+        reset,
+        formState: { errors, submitCount },
+    } = useForm<CreateUserRequest>({
+        resolver: zodResolver(CreateUserRequestSchema),
+        defaultValues: {
             name: '',
             login: '',
             email: '',
@@ -41,23 +39,23 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
             admin: false,
             active: true,
         },
-        validationSchema: toFormikValidationSchema(CreateUserRequestSchema),
-        onSubmit: (values) => {
-            createUser(values);
-        },
     });
 
     const { mutate: createUser, isPending } = useCreateUser(
         () => {
             onOpenChange(false);
-            formik.resetForm();
+            reset();
         }
     );
+
+    const onSubmit = (values: CreateUserRequest) => {
+        createUser(values);
+    };
 
     // Reset form when modal closes
     const handleOpenChange = (newOpen: boolean) => {
         if (!newOpen) {
-            formik.resetForm();
+            reset();
         }
         onOpenChange(newOpen);
     };
@@ -77,52 +75,44 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={formik.handleSubmit} className="space-y-6 mt-6">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-6">
                     {/* Nome Completo */}
-                    <FormField
+                    <Field
                         label="Nome Completo"
-                        name="name"
                         placeholder="Ex: João Silva Santos"
-                        value={formik.values.name}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.name ? formik.errors.name : undefined}
+                        error={errors.name?.message}
+                        submitCount={submitCount}
+                        {...register('name')}
                     />
 
                     {/* Login */}
-                    <FormField
+                    <Field
                         label="Login de Acesso"
-                        name="login"
                         placeholder="Ex: joao.silva"
-                        value={formik.values.login}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.login ? formik.errors.login : undefined}
+                        error={errors.login?.message}
+                        submitCount={submitCount}
+                        {...register('login')}
                     />
 
                     {/* Email */}
-                    <FormField
+                    <Field
                         label="Email"
-                        name="email"
                         type="email"
                         placeholder="Ex: joao.silva@empresa.com"
-                        value={formik.values.email}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.email ? formik.errors.email : undefined}
+                        error={errors.email?.message}
+                        submitCount={submitCount}
+                        {...register('email')}
                     />
 
                     {/* Senha */}
                     <div className="space-y-2">
-                        <FormField
+                        <Field
                             label="Senha Inicial"
-                            name="password"
                             type="password"
                             placeholder="Digite uma senha segura"
-                            value={formik.values.password}
-                            onChange={formik.handleChange}
-                            onBlur={formik.handleBlur}
-                            error={formik.touched.password ? formik.errors.password : undefined}
+                            error={errors.password?.message}
+                            submitCount={submitCount}
+                            {...register('password')}
                         />
                         <p className="text-xs text-muted-foreground">
                             O usuário poderá alterar a senha no primeiro acesso
@@ -139,12 +129,16 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
                         <div className="space-y-3">
                             {/* Usuário Ativo */}
                             <div className="flex items-center space-x-2">
-                                <Checkbox
-                                    id="active"
-                                    checked={formik.values.active}
-                                    onCheckedChange={(checked) =>
-                                        formik.setFieldValue('active', checked === true)
-                                    }
+                                <Controller
+                                    control={control}
+                                    name="active"
+                                    render={({ field }) => (
+                                        <Checkbox
+                                            id="active"
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => field.onChange(checked === true)}
+                                        />
+                                    )}
                                 />
                                 <Label
                                     htmlFor="active"
@@ -156,12 +150,16 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
 
                             {/* Administrador */}
                             <div className="flex items-start space-x-2">
-                                <Checkbox
-                                    id="admin"
-                                    checked={formik.values.admin}
-                                    onCheckedChange={(checked) =>
-                                        formik.setFieldValue('admin', checked === true)
-                                    }
+                                <Controller
+                                    control={control}
+                                    name="admin"
+                                    render={({ field }) => (
+                                        <Checkbox
+                                            id="admin"
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => field.onChange(checked === true)}
+                                        />
+                                    )}
                                 />
                                 <div className="grid gap-1.5 leading-none">
                                     <Label

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFormik } from 'formik';
-import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
     Settings,
@@ -64,6 +64,10 @@ const limitsSchema = z.object({
     maxCategoriesPerAccount: z.number().min(1).max(100),
 });
 
+type AccessModeFormData = z.infer<typeof accessModeSchema>;
+type FeaturesFormData = z.infer<typeof featuresSchema>;
+type LimitsFormData = z.infer<typeof limitsSchema>;
+
 interface UserPermissionsModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -82,10 +86,13 @@ export function UserPermissionsModal({
     // Estado local para metadata que pode ser atualizado após grant/revoke
     const [localMetadata, setLocalMetadata] = useState<UserMetadata | null>(user?.metadata || null);
 
-    // Atualizar estado local quando o user mudar (ex: ao abrir modal com outro usuário)
-    useEffect(() => {
+    // Atualizar estado local quando o user mudar (ex: ao abrir modal com outro usuário).
+    // Ajuste durante o render (padrão do React) em vez de setState num effect.
+    const [prevMetadata, setPrevMetadata] = useState(user?.metadata);
+    if (user?.metadata !== prevMetadata) {
+        setPrevMetadata(user?.metadata);
         setLocalMetadata(user?.metadata || null);
-    }, [user?.metadata]);
+    }
 
     // Mutations
     const updateAccessMode = useUpdateUserAccessMode();
@@ -95,56 +102,56 @@ export function UserPermissionsModal({
     const grantLifetimePro = useGrantLifetimePro();
     const revokeLifetimePro = useRevokeLifetimePro();
 
-    // Forms using Formik
-    const accessFormik = useFormik({
-        initialValues: {
-            accessMode: user?.metadata?.accessMode?.toLowerCase() || 'read_write',
-        },
-        validationSchema: toFormikValidationSchema(accessModeSchema),
-        enableReinitialize: true,
-        onSubmit: (values) => {
-            if (!user) return;
-            updateAccessMode.mutate({
-                userId: user.id,
-                accessMode: values.accessMode,
-            });
+    // Formulários (react-hook-form). `values` reinicializa quando o usuário muda.
+    const accessForm = useForm<AccessModeFormData>({
+        resolver: zodResolver(accessModeSchema),
+        values: {
+            accessMode: (user?.metadata?.accessMode?.toLowerCase() as AccessModeFormData['accessMode']) || 'read_write',
         },
     });
 
-    const featuresFormik = useFormik({
-        initialValues: {
+    const featuresForm = useForm<FeaturesFormData>({
+        resolver: zodResolver(featuresSchema),
+        values: {
             canCreateBudgets: user?.metadata?.canCreateBudgets ?? true,
             canExportData: user?.metadata?.canExportData ?? false,
             canUseReports: user?.metadata?.canUseReports ?? false,
             canUseGoals: user?.metadata?.canUseGoals ?? false,
         },
-        validationSchema: toFormikValidationSchema(featuresSchema),
-        enableReinitialize: true,
-        onSubmit: (values) => {
-            if (!user) return;
-            updateFeatures.mutate({
-                userId: user.id,
-                features: values,
-            });
-        },
     });
 
-    const limitsFormik = useFormik({
-        initialValues: {
+    const limitsForm = useForm<LimitsFormData>({
+        resolver: zodResolver(limitsSchema),
+        values: {
             maxAccounts: user?.metadata?.maxAccounts ?? 5,
             maxTransactionsPerMonth: user?.metadata?.maxTransactionsPerMonth ?? 100,
             maxCategoriesPerAccount: user?.metadata?.maxCategoriesPerAccount ?? 20,
         },
-        validationSchema: toFormikValidationSchema(limitsSchema),
-        enableReinitialize: true,
-        onSubmit: (values) => {
-            if (!user) return;
-            updateLimits.mutate({
-                userId: user.id,
-                limits: values,
-            });
-        },
     });
+
+    const onSubmitAccess = (values: AccessModeFormData) => {
+        if (!user) return;
+        updateAccessMode.mutate({
+            userId: user.id,
+            accessMode: values.accessMode,
+        });
+    };
+
+    const onSubmitFeatures = (values: FeaturesFormData) => {
+        if (!user) return;
+        updateFeatures.mutate({
+            userId: user.id,
+            features: values,
+        });
+    };
+
+    const onSubmitLimits = (values: LimitsFormData) => {
+        if (!user) return;
+        updateLimits.mutate({
+            userId: user.id,
+            limits: values,
+        });
+    };
 
     const handleEnsureMetadata = () => {
         if (!user) return;
@@ -269,12 +276,16 @@ export function UserPermissionsModal({
                                             </p>
                                         </div>
 
-                                        <form onSubmit={accessFormik.handleSubmit} className="space-y-4">
+                                        <form onSubmit={accessForm.handleSubmit(onSubmitAccess)} className="space-y-4">
                                             <div className="space-y-2">
                                                 <Label>Novo modo de acesso</Label>
+                                                <Controller
+                                                    control={accessForm.control}
+                                                    name="accessMode"
+                                                    render={({ field }) => (
                                                 <Select
-                                                    onValueChange={(value) => accessFormik.setFieldValue('accessMode', value)}
-                                                    value={accessFormik.values.accessMode}
+                                                    onValueChange={field.onChange}
+                                                    value={field.value}
                                                 >
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Selecione o modo de acesso" />
@@ -300,8 +311,10 @@ export function UserPermissionsModal({
                                                         </SelectItem>
                                                     </SelectContent>
                                                 </Select>
-                                                {accessFormik.touched.accessMode && accessFormik.errors.accessMode && (
-                                                    <p className="text-sm text-red-600">{accessFormik.errors.accessMode}</p>
+                                                    )}
+                                                />
+                                                {accessForm.formState.errors.accessMode && (
+                                                    <p className="text-sm text-red-600">{accessForm.formState.errors.accessMode.message}</p>
                                                 )}
                                             </div>
 
@@ -350,7 +363,7 @@ export function UserPermissionsModal({
                                             </Button>
                                         ) : null}
 
-                                        <form onSubmit={featuresFormik.handleSubmit} className="space-y-4">
+                                        <form onSubmit={featuresForm.handleSubmit(onSubmitFeatures)} className="space-y-4">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <Label>Criar Orçamentos</Label>
@@ -358,9 +371,12 @@ export function UserPermissionsModal({
                                                         Permite criar e gerenciar orçamentos
                                                     </p>
                                                 </div>
-                                                <Switch
-                                                    checked={featuresFormik.values.canCreateBudgets}
-                                                    onCheckedChange={(checked) => featuresFormik.setFieldValue('canCreateBudgets', checked)}
+                                                <Controller
+                                                    control={featuresForm.control}
+                                                    name="canCreateBudgets"
+                                                    render={({ field }) => (
+                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                    )}
                                                 />
                                             </div>
 
@@ -371,9 +387,12 @@ export function UserPermissionsModal({
                                                         Permite exportar dados em diversos formatos
                                                     </p>
                                                 </div>
-                                                <Switch
-                                                    checked={featuresFormik.values.canExportData}
-                                                    onCheckedChange={(checked) => featuresFormik.setFieldValue('canExportData', checked)}
+                                                <Controller
+                                                    control={featuresForm.control}
+                                                    name="canExportData"
+                                                    render={({ field }) => (
+                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                    )}
                                                 />
                                             </div>
 
@@ -384,9 +403,12 @@ export function UserPermissionsModal({
                                                         Permite gerar e visualizar relatórios
                                                     </p>
                                                 </div>
-                                                <Switch
-                                                    checked={featuresFormik.values.canUseReports}
-                                                    onCheckedChange={(checked) => featuresFormik.setFieldValue('canUseReports', checked)}
+                                                <Controller
+                                                    control={featuresForm.control}
+                                                    name="canUseReports"
+                                                    render={({ field }) => (
+                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                    )}
                                                 />
                                             </div>
 
@@ -397,9 +419,12 @@ export function UserPermissionsModal({
                                                         Permite criar e gerenciar metas financeiras
                                                     </p>
                                                 </div>
-                                                <Switch
-                                                    checked={featuresFormik.values.canUseGoals}
-                                                    onCheckedChange={(checked) => featuresFormik.setFieldValue('canUseGoals', checked)}
+                                                <Controller
+                                                    control={featuresForm.control}
+                                                    name="canUseGoals"
+                                                    render={({ field }) => (
+                                                        <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                                    )}
                                                 />
                                             </div>
 
@@ -432,44 +457,35 @@ export function UserPermissionsModal({
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent>
-                                        <form onSubmit={limitsFormik.handleSubmit} className="space-y-4">
+                                        <form onSubmit={limitsForm.handleSubmit(onSubmitLimits)} className="space-y-4">
                                             <Field
                                                 label="Máximo de Contas"
-                                                name="maxAccounts"
                                                 type="number"
                                                 min="1"
                                                 max="100"
-                                                value={limitsFormik.values.maxAccounts}
-                                                onChange={(e) => limitsFormik.setFieldValue('maxAccounts', Number(e.target.value))}
-                                                onBlur={limitsFormik.handleBlur}
-                                                error={limitsFormik.errors.maxAccounts}
-                                                touched={limitsFormik.touched.maxAccounts}
+                                                error={limitsForm.formState.errors.maxAccounts?.message}
+                                                submitCount={limitsForm.formState.submitCount}
+                                                {...limitsForm.register('maxAccounts', { valueAsNumber: true })}
                                             />
 
                                             <Field
                                                 label="Transações por Mês"
-                                                name="maxTransactionsPerMonth"
                                                 type="number"
                                                 min="1"
                                                 max="10000"
-                                                value={limitsFormik.values.maxTransactionsPerMonth}
-                                                onChange={(e) => limitsFormik.setFieldValue('maxTransactionsPerMonth', Number(e.target.value))}
-                                                onBlur={limitsFormik.handleBlur}
-                                                error={limitsFormik.errors.maxTransactionsPerMonth}
-                                                touched={limitsFormik.touched.maxTransactionsPerMonth}
+                                                error={limitsForm.formState.errors.maxTransactionsPerMonth?.message}
+                                                submitCount={limitsForm.formState.submitCount}
+                                                {...limitsForm.register('maxTransactionsPerMonth', { valueAsNumber: true })}
                                             />
 
                                             <Field
                                                 label="Categorias por Conta"
-                                                name="maxCategoriesPerAccount"
                                                 type="number"
                                                 min="1"
                                                 max="100"
-                                                value={limitsFormik.values.maxCategoriesPerAccount}
-                                                onChange={(e) => limitsFormik.setFieldValue('maxCategoriesPerAccount', Number(e.target.value))}
-                                                onBlur={limitsFormik.handleBlur}
-                                                error={limitsFormik.errors.maxCategoriesPerAccount}
-                                                touched={limitsFormik.touched.maxCategoriesPerAccount}
+                                                error={limitsForm.formState.errors.maxCategoriesPerAccount?.message}
+                                                submitCount={limitsForm.formState.submitCount}
+                                                {...limitsForm.register('maxCategoriesPerAccount', { valueAsNumber: true })}
                                             />
 
                                             <Button
