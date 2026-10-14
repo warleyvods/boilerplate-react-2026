@@ -3,15 +3,13 @@
 import { useTranslations } from 'next-intl';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Globe, Info, Lock } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Globe, Info } from 'lucide-react';
 import { Control, useFormContext } from 'react-hook-form';
 import { SettingsFormData } from '@/lib/schemas';
 import { FormField, FormItem, FormControl, FormLabel, FormMessage } from '@/components/ui/form';
 
-import { useRouter, usePathname } from '@/i18n/routing';
+import { useRouter } from '@/i18n/routing';
 import { useUpdateUserSettings } from '@/hooks/settings/use-user-settings';
 
 interface GeneralSettingsProps {
@@ -21,7 +19,6 @@ interface GeneralSettingsProps {
 export function GeneralSettings({ control }: GeneralSettingsProps) {
     const t = useTranslations('Settings.General');
     const router = useRouter();
-    const pathname = usePathname();
     const { getValues } = useFormContext<SettingsFormData>();
     const { mutate: updateSettings } = useUpdateUserSettings();
 

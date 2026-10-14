@@ -2,7 +2,6 @@ import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
-import { UpdatePasswordRequest } from '@/lib/schemas';
 
 export function useSetPassword(onSuccess?: () => void) {
     return useMutation({

@@ -23,7 +23,6 @@ function LoginContent() {
     const t = useTranslations('Auth.Login');
     const { mutate: login, isPending, error } = useLogin();
     const [isMobile, setIsMobile] = useState(false);
-    const [submitCount, setSubmitCount] = useState(0);
 
     useEffect(() => {
         const checkIsMobile = () => {
@@ -40,14 +39,13 @@ function LoginContent() {
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, submitCount },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         mode: 'onBlur',
     });
 
     const onSubmit = (data: LoginFormData) => {
-        setSubmitCount(prev => prev + 1);
         login(data);
     };
 

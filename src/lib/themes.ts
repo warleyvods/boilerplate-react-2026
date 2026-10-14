@@ -379,6 +379,12 @@ export const themes = {
 
 export type ThemeValue = keyof typeof themes;
 
+/** Paleta padrão para quem ainda não escolheu uma. */
+export const DEFAULT_COLOR_THEME: ThemeValue = 'violetbloom';
+
+/** Chave do localStorage com a paleta escolhida. */
+export const COLOR_THEME_STORAGE_KEY = 'boilerplate-color-theme';
+
 export const sharedCSSVars = {
     '--font-sans': 'Outfit, sans-serif',
     '--font-serif': 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',

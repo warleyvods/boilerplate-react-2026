@@ -2,9 +2,10 @@ import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { getApiUrlDynamic } from './api-config';
 
 /**
- * Corpo de erro da API. O backend responde ProblemDetail (RFC 9457: type, title,
- * status, detail, instance) mantendo `message` como propriedade extra; versões
- * antigas mandavam `details`/`error`. Os campos opcionais cobrem os dois formatos.
+ * Corpo de erro da API: ProblemDetail (RFC 9457: type, title, status, detail,
+ * instance) com extras `message` (= detail), `error` (= title), `fields`
+ * (erros de validação por campo, `{}` se nenhum), `timestamp` e `devMsg` (só
+ * fora de prod). `details` é do formato antigo e fica só como fallback.
  */
 export interface ApiErrorBody {
     type?: string;
@@ -13,8 +14,11 @@ export interface ApiErrorBody {
     detail?: string;
     instance?: string;
     message?: string;
-    details?: string;
     error?: string;
+    fields?: Record<string, string>;
+    timestamp?: string;
+    devMsg?: string;
+    details?: string;
 }
 
 /** Mensagem legível do erro: `message` || `detail` || `details` || `error`. */
@@ -54,7 +58,9 @@ if (typeof window !== 'undefined') {
         if (event.data.type === 'LOGOUT') {
             // Se recebeu logout de outra aba, redireciona para login
             localStorage.removeItem('user-storage');
-            window.location.href = '/login';
+            // Navegação completa de propósito: zera o estado em memória (fora do React)
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+            window.location.assign('/login');
         } else if (event.data.type === 'TOKEN_REFRESHED') {
             // Token foi atualizado em outra aba, cancela refresh local se estiver em andamento
             if (isRefreshing) {
@@ -221,7 +227,9 @@ function handleLogout() {
 
     if (typeof window !== 'undefined') {
         localStorage.removeItem('user-storage');
-        window.location.href = '/login';
+        // Navegação completa de propósito: zera o estado em memória (fora do React)
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+        window.location.assign('/login');
     }
 }
 

@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { AxiosError } from 'axios';
+import { api, type ApiErrorBody } from '@/lib/api';
 import { QueryKeys } from '@/lib/query-keys';
 
 export function useDeleteUsers() {
@@ -21,7 +22,7 @@ export function useDeleteUsers() {
 
             toast.success(message);
         },
-        onError: (error: any) => {
+        onError: (error: AxiosError<ApiErrorBody>) => {
             toast.error(
                 error.response?.data?.message || 'Erro ao excluir usuários'
             );

@@ -1,9 +1,19 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
-import { themes, ThemeValue, generateThemeCSSVars } from '@/lib/themes';
+import {
+    themes,
+    ThemeValue,
+    generateThemeCSSVars,
+    COLOR_THEME_STORAGE_KEY,
+    DEFAULT_COLOR_THEME,
+} from '@/lib/themes';
 
+/**
+ * Paleta de cores (ocean, sunset, ...). É um eixo separado do modo claro/escuro,
+ * que fica com o next-themes; por isso este provider continua existindo.
+ */
 interface CustomThemeContextType {
     currentTheme: ThemeValue;
     setTheme: (theme: ThemeValue) => void;
@@ -12,110 +22,59 @@ interface CustomThemeContextType {
 
 const CustomThemeContext = createContext<CustomThemeContextType | undefined>(undefined);
 
-// Tema padrão para novos usuários
-const DEFAULT_THEME: ThemeValue = 'violetbloom';
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+    listeners.add(listener);
+    window.addEventListener('storage', listener);
+    return () => {
+        listeners.delete(listener);
+        window.removeEventListener('storage', listener);
+    };
+}
+
+function readSavedTheme(): ThemeValue {
+    try {
+        const saved = localStorage.getItem(COLOR_THEME_STORAGE_KEY);
+        if (saved && saved in themes) return saved as ThemeValue;
+    } catch {
+        // localStorage indisponível: usa o padrão
+    }
+    return DEFAULT_COLOR_THEME;
+}
+
+function saveTheme(theme: ThemeValue) {
+    try {
+        localStorage.setItem(COLOR_THEME_STORAGE_KEY, theme);
+    } catch {
+        // localStorage indisponível: o tema vale só nesta sessão
+    }
+    listeners.forEach((listener) => listener());
+}
 
 export function CustomThemeProvider({ children }: { children: React.ReactNode }) {
-    const { theme: colorMode } = useTheme(); // 'light' | 'dark' | 'system'
-    const [currentTheme, setCurrentTheme] = useState<ThemeValue>(DEFAULT_THEME);
-    const [mounted, setMounted] = useState(false);
+    // resolvedTheme já resolve 'system' e acompanha a preferência do sistema
+    const { resolvedTheme } = useTheme();
+    const currentTheme = useSyncExternalStore(subscribe, readSavedTheme, () => DEFAULT_COLOR_THEME);
 
-    // Carrega o tema salvo no localStorage
+    // Aplica as variáveis CSS no root quando a paleta ou o modo mudam
+    // (no primeiro load o script inline do layout já aplicou, evitando flash)
     useEffect(() => {
-        setMounted(true);
-        try {
-            const savedTheme = localStorage.getItem('freebills-theme') as ThemeValue;
-            if (savedTheme && themes[savedTheme]) {
-                setCurrentTheme(savedTheme);
-            } else {
-                // Se não houver tema salvo, salva o tema padrão
-                localStorage.setItem('freebills-theme', DEFAULT_THEME);
-            }
-        } catch (error) {
-            console.error('Erro ao carregar tema:', error);
-            // Em caso de erro, usa o tema padrão
-            setCurrentTheme(DEFAULT_THEME);
-        }
-    }, []);
+        if (!resolvedTheme) return;
 
-    // Atualiza as variáveis CSS quando o tema ou modo mudam
-    // (exceto na primeira montagem, pois o script já aplicou)
-    const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-    useEffect(() => {
-        if (!mounted || typeof window === 'undefined') return;
-
-        // Se é a primeira carga, pula (o script já aplicou)
-        if (isInitialLoad) {
-            setIsInitialLoad(false);
-            return;
-        }
-
-        // Determina se deve usar dark mode
-        let isDark = false;
-        if (colorMode === 'dark') {
-            isDark = true;
-        } else if (colorMode === 'system') {
-            // Verifica a preferência do sistema
-            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        }
-
-        const theme = themes[currentTheme];
-
-        if (!theme) return; // Proteção adicional
-
-        const cssVars = generateThemeCSSVars(theme, isDark);
-
-        // Aplica as variáveis CSS no root
+        const cssVars = generateThemeCSSVars(themes[currentTheme], resolvedTheme === 'dark');
         const root = document.documentElement;
         Object.entries(cssVars).forEach(([key, value]) => {
             root.style.setProperty(key, value);
         });
-
-        // Aplica o tema no body para letter-spacing
-        if (document.body) {
-            document.body.style.letterSpacing = 'var(--tracking-normal)';
-        }
-    }, [currentTheme, colorMode, mounted, isInitialLoad]);
-
-    // Listener para mudanças na preferência do sistema
-    useEffect(() => {
-        if (!mounted || colorMode !== 'system') return;
-
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-
-        const handleChange = () => {
-            // Força atualização quando a preferência do sistema muda
-            const isDark = mediaQuery.matches;
-            const theme = themes[currentTheme];
-
-            if (!theme) return;
-
-            const cssVars = generateThemeCSSVars(theme, isDark);
-            const root = document.documentElement;
-            Object.entries(cssVars).forEach(([key, value]) => {
-                root.style.setProperty(key, value);
-            });
-        };
-
-        mediaQuery.addEventListener('change', handleChange);
-        return () => mediaQuery.removeEventListener('change', handleChange);
-    }, [currentTheme, colorMode, mounted]);
-
-    const handleSetTheme = (theme: ThemeValue) => {
-        setCurrentTheme(theme);
-        localStorage.setItem('freebills-theme', theme);
-    };
-
-    if (!mounted) {
-        return <>{children}</>;
-    }
+        document.body.style.letterSpacing = 'var(--tracking-normal)';
+    }, [currentTheme, resolvedTheme]);
 
     return (
         <CustomThemeContext.Provider
             value={{
                 currentTheme,
-                setTheme: handleSetTheme,
+                setTheme: saveTheme,
                 availableThemes: themes,
             }}
         >
@@ -127,12 +86,7 @@ export function CustomThemeProvider({ children }: { children: React.ReactNode })
 export function useCustomTheme() {
     const context = useContext(CustomThemeContext);
     if (!context) {
-        // Retorna valores padrão durante a renderização no servidor ou antes do provider estar montado
-        return {
-            currentTheme: 'ocean' as ThemeValue,
-            setTheme: () => { },
-            availableThemes: themes,
-        };
+        throw new Error('useCustomTheme must be used within a CustomThemeProvider');
     }
     return context;
 }

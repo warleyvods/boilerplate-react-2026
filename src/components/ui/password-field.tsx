@@ -21,12 +21,12 @@ function PasswordField({
     submitCount = 0,
     className,
     onChange,
-    onFocus,
     ...props
 }: PasswordFieldProps) {
     const [showPassword, setShowPassword] = React.useState(false);
 
-    // submitCount em que o usuário escondeu o erro (digitando/focando).
+    // submitCount em que o usuário escondeu o erro (começou a digitar). Não esconde
+    // no foco: o react-hook-form foca o 1º campo inválido no submit e o erro sumiria.
     // Um novo submit muda o submitCount e o erro volta a aparecer.
     const [hiddenAtSubmit, setHiddenAtSubmit] = React.useState<number | null>(null);
     const hideErrorOnChange = hiddenAtSubmit === submitCount;
@@ -41,14 +41,6 @@ function PasswordField({
             setHiddenAtSubmit(submitCount);
         }
         onChange?.(e);
-    };
-
-    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-        // Se há erro e o usuário focou no campo, esconde o erro
-        if (error && submitCount > 0) {
-            setHiddenAtSubmit(submitCount);
-        }
-        onFocus?.(e);
     };
 
     return (
@@ -83,7 +75,6 @@ function PasswordField({
                     aria-invalid={hasError ? 'true' : 'false'}
                     aria-describedby={hasError ? `${name}-error` : undefined}
                     onChange={handleChange}
-                    onFocus={handleFocus}
                     {...props}
                 />
                 <button

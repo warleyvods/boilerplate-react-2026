@@ -4,10 +4,12 @@ import { useMySubscription } from '@/hooks/use-my-subscription';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Crown, ExternalLink, Loader2, Calendar, CreditCard } from 'lucide-react';
+import { Crown, ExternalLink, Loader2, Calendar } from 'lucide-react';
+import { useRouter } from '@/i18n/routing';
 
 export function SubscriptionSettings() {
     const { data: subscription, isLoading } = useMySubscription();
+    const router = useRouter();
 
     if (isLoading) {
         return (
@@ -42,7 +44,7 @@ export function SubscriptionSettings() {
                                     )}
                                 </div>
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => window.location.href = '/subscription?tab=plans'}>
+                            <Button variant="outline" size="sm" onClick={() => router.push('/subscription?tab=plans')}>
                                 <ExternalLink className="h-4 w-4 mr-2" />
                                 Ver Planos
                             </Button>
@@ -58,7 +60,7 @@ export function SubscriptionSettings() {
                                     Faça upgrade para desbloquear recursos premium como limites maiores e relatórios avançados.
                                 </p>
                             </div>
-                            <Button onClick={() => window.location.href = '/subscription?tab=plans'}>
+                            <Button onClick={() => router.push('/subscription?tab=plans')}>
                                 Ver Planos
                             </Button>
                         </div>

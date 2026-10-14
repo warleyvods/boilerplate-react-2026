@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { ColumnDef } from '@tanstack/react-table';
 import {
     Users,
@@ -21,7 +21,7 @@ import { ptBR } from 'date-fns/locale';
 
 import { PageContainer } from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { DataTable, type DataTableFeatures } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -37,7 +37,6 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'; // Make sure thi
 // Hooks & Modals
 import { useUsers } from '@/hooks/users/use-users';
 import { useDeleteUser } from '@/hooks/users/use-delete-user';
-import { useDeleteUsers } from '@/hooks/users/use-delete-users';
 import { useToggleUserStatus } from '@/hooks/users/use-toggle-user-status';
 import { useDebounce } from '@/hooks/use-debounce';
 import { CreateUserModal } from '@/components/create-user-modal';
@@ -67,7 +66,6 @@ export default function UsersPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false); // For toggle status confirmation if needed, currently direct toggle
 
     // Queries e Mutations
     const { data: usersData, isLoading } = useUsers({
@@ -122,136 +120,133 @@ export default function UsersPage() {
     };
 
 
-    // Colunas da Tabela
-    const columns = useMemo<ColumnDef<DataTableFeatures, User>[]>(
-        () => [
-            {
-                accessorKey: 'name',
-                header: ({ column }) => {
-                    return (
-                        <Button
-                            variant="ghost"
-                            onClick={() => {
-                                const isAsc = sortBy === 'name,asc';
-                                setSortBy(isAsc ? 'name,desc' : 'name,asc');
-                            }}
-                            className="-ml-4 hover:bg-transparent"
-                        >
-                            Nome
-                            <ArrowUpDown className="ml-2 h-4 w-4" />
-                        </Button>
-                    );
-                },
-                cell: ({ row }) => (
-                    <div className="flex flex-col">
-                        <span className="font-medium">{row.original.name}</span>
-                        <span className="text-xs text-muted-foreground">{row.original.login}</span>
-                    </div>
-                ),
+    // Colunas da Tabela (o React Compiler memoiza; sem useMemo manual)
+    const columns: ColumnDef<DataTableFeatures, User>[] = [
+        {
+            accessorKey: 'name',
+            header: () => {
+                return (
+                    <Button
+                        variant="ghost"
+                        onClick={() => {
+                            const isAsc = sortBy === 'name,asc';
+                            setSortBy(isAsc ? 'name,desc' : 'name,asc');
+                        }}
+                        className="-ml-4 hover:bg-transparent"
+                    >
+                        Nome
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                );
             },
-            {
-                accessorKey: 'email',
-                header: 'Email',
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium">{row.original.name}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.login}</span>
+                </div>
+            ),
+        },
+        {
+            accessorKey: 'email',
+            header: 'Email',
+        },
+        {
+            accessorKey: 'roles',
+            header: 'Tipo',
+            cell: ({ row }) => {
+                const isAdmin = row.original.admin;
+                return (
+                    <Badge variant={isAdmin ? 'default' : 'secondary'} className="gap-1">
+                        {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                        {isAdmin ? 'Administrador' : 'Usuário'}
+                    </Badge>
+                );
             },
-            {
-                accessorKey: 'roles',
-                header: 'Tipo',
-                cell: ({ row }) => {
-                    const isAdmin = row.original.admin;
-                    return (
-                        <Badge variant={isAdmin ? 'default' : 'secondary'} className="gap-1">
-                            {isAdmin ? <ShieldCheck className="h-3 w-3" /> : <Users className="h-3 w-3" />}
-                            {isAdmin ? 'Administrador' : 'Usuário'}
+        },
+        {
+            accessorKey: 'active',
+            header: 'Status',
+            cell: ({ row }) => {
+                const isActive = row.original.active;
+                return (
+                    <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={isActive ? "bg-green-100 text-green-800 hover:bg-green-200 border-transparent" : "bg-red-100 text-red-800 hover:bg-red-200 border-transparent"}>
+                            {isActive ? 'Ativo' : 'Inativo'}
                         </Badge>
-                    );
-                },
+                    </div>
+                );
             },
-            {
-                accessorKey: 'active',
-                header: 'Status',
-                cell: ({ row }) => {
-                    const isActive = row.original.active;
-                    return (
-                        <div className="flex items-center gap-2">
-                            <Badge variant="outline" className={isActive ? "bg-green-100 text-green-800 hover:bg-green-200 border-transparent" : "bg-red-100 text-red-800 hover:bg-red-200 border-transparent"}>
-                                {isActive ? 'Ativo' : 'Inativo'}
-                            </Badge>
-                        </div>
-                    );
-                },
+        },
+        {
+            accessorKey: 'createdAt',
+            header: 'Criado em',
+            cell: ({ row }) => {
+                if (!row.original.createdAt) return '-';
+                try {
+                    return format(new Date(row.original.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR });
+                } catch {
+                    return row.original.createdAt;
+                }
             },
-            {
-                accessorKey: 'createdAt',
-                header: 'Criado em',
-                cell: ({ row }) => {
-                    if (!row.original.createdAt) return '-';
-                    try {
-                        return format(new Date(row.original.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR });
-                    } catch (e) {
-                        return row.original.createdAt;
-                    }
-                },
-            },
-            {
-                id: 'actions',
-                cell: ({ row }) => {
-                    const user = row.original;
+        },
+        {
+            id: 'actions',
+            cell: ({ row }) => {
+                const user = row.original;
 
-                    return (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Abrir menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(user.id))}>
-                                    Copiar ID
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleEditUser(user)}>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleChangePassword(user)}>
-                                    <Key className="mr-2 h-4 w-4" />
-                                    Alterar Senha
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleManagePermissions(user)}>
-                                    <Shield className="mr-2 h-4 w-4" />
-                                    Permissões
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleViewSecurity(user)}>
-                                    <ShieldCheck className="mr-2 h-4 w-4" />
-                                    Segurança
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
-                                    {user.active ? (
-                                        <>
-                                            <Lock className="mr-2 h-4 w-4" /> Desativar
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Unlock className="mr-2 h-4 w-4" /> Ativar
-                                        </>
-                                    )}
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => handleDeleteClick(user)} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Excluir
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    );
-                },
+                return (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Abrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(String(user.id))}>
+                                Copiar ID
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleEditUser(user)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleChangePassword(user)}>
+                                <Key className="mr-2 h-4 w-4" />
+                                Alterar Senha
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleManagePermissions(user)}>
+                                <Shield className="mr-2 h-4 w-4" />
+                                Permissões
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewSecurity(user)}>
+                                <ShieldCheck className="mr-2 h-4 w-4" />
+                                Segurança
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleToggleStatus(user)}>
+                                {user.active ? (
+                                    <>
+                                        <Lock className="mr-2 h-4 w-4" /> Desativar
+                                    </>
+                                ) : (
+                                    <>
+                                        <Unlock className="mr-2 h-4 w-4" /> Ativar
+                                    </>
+                                )}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleDeleteClick(user)} className="text-destructive focus:text-destructive">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                );
             },
-        ],
-        [sortBy]
-    );
+        },
+    ];
 
     return (
         <PageContainer title="Usuários">
@@ -344,10 +339,6 @@ export default function UsersPage() {
                 open={isSecurityModalOpen}
                 onOpenChange={setIsSecurityModalOpen}
                 user={selectedUser}
-                onManagePermissions={() => {
-                    setIsSecurityModalOpen(false);
-                    setIsPermissionsModalOpen(true);
-                }}
             />
 
             <ConfirmDialog

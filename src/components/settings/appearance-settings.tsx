@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useCustomTheme } from '@/providers/custom-theme-provider';
+import { useIsClient } from '@/hooks/use-is-client';
+import type { ThemeValue } from '@/lib/themes';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Monitor, Moon, Sun, Check, Palette } from 'lucide-react';
@@ -11,15 +12,10 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 
 export function AppearanceSettings() {
-    const [mounted, setMounted] = useState(false);
+    const mounted = useIsClient();
     const { theme: colorMode, setTheme: setColorMode } = useTheme();
     const { currentTheme, setTheme, availableThemes } = useCustomTheme();
     const t = useTranslations('Settings.Appearance');
-
-    useEffect(() => {
-        setMounted(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     if (!mounted) {
         return (
@@ -42,8 +38,8 @@ export function AppearanceSettings() {
     const handleThemeChange = (newTheme: string) => {
         if (!mounted) return;
 
-        setTheme(newTheme as any);
-        const themeName = availableThemes[newTheme as keyof typeof availableThemes]?.name || 'tema';
+        setTheme(newTheme as ThemeValue);
+        const themeName = availableThemes[newTheme as ThemeValue]?.name || 'tema';
         // Toast removido para evitar spam visual ou pode ser adicionado se desejado
         toast.success(t('themeApplied', { theme: themeName }));
     };
@@ -70,7 +66,7 @@ export function AppearanceSettings() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <RadioGroup value={currentTheme || 'ocean'} onValueChange={handleThemeChange}>
+                    <RadioGroup value={currentTheme} onValueChange={handleThemeChange}>
                         <div className="grid gap-4">
                             {Object.entries(availableThemes).map(([key, theme]) => (
                                 <label

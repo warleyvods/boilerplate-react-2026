@@ -77,7 +77,7 @@ export function Sidebar() {
 
                                 {isExpanded && (
                                     <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        {t(section.title as any)}
+                                        {t(section.title)}
                                     </h3>
                                 )}
 
@@ -104,7 +104,7 @@ export function Sidebar() {
                                                 )} />
 
                                                 {isExpanded && (
-                                                    <span className="truncate">{t(item.name as any)}</span>
+                                                    <span className="truncate">{t(item.name)}</span>
                                                 )}
                                             </Link>
                                         );
@@ -116,7 +116,7 @@ export function Sidebar() {
                                                         {linkContent}
                                                     </TooltipTrigger>
                                                     <TooltipContent side="right" sideOffset={8}>
-                                                        {t(item.name as any)}
+                                                        {t(item.name)}
                                                     </TooltipContent>
                                                 </Tooltip>
                                             );

@@ -18,7 +18,7 @@ function EmailVerificationContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
   const [countdown, setCountdown] = useState(120); // 2 minutos em segundos
-  const [canResend, setCanResend] = useState(false);
+  const canResend = countdown <= 0;
   const [isMobile, setIsMobile] = useState(false);
   
   const { mutate: resendEmail, isPending: isResending } = useResendEmailVerification();
@@ -41,8 +41,6 @@ function EmailVerificationContent() {
     if (countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else {
-      setCanResend(true);
     }
   }, [countdown]);
 
@@ -52,7 +50,6 @@ function EmailVerificationContent() {
     resendEmail({ email }, {
       onSuccess: () => {
         setCountdown(120); // Reset countdown para 2 minutos
-        setCanResend(false);
         toast.success('Email de verificação reenviado com sucesso!');
       },
       onError: (error: AxiosError<ApiErrorBody>) => {

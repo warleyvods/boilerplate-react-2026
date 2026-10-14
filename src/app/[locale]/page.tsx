@@ -20,7 +20,7 @@ export default function Home() {
         // better visual just to show the url:
         setStatus(`Ready to connect to ${apiUrl}`);
         setIsConnected(true);
-      } catch (e) {
+      } catch {
         setStatus("Backend not detected (is it running?)");
         setIsConnected(false);
       }

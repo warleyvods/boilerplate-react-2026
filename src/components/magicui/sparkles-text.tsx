@@ -85,7 +85,7 @@ export const SparklesText: React.FC<SparklesTextProps> = ({
     );
 };
 
-interface SparkleProps extends Sparkle { }
+type SparkleProps = Sparkle;
 
 const SparkleComponent: React.FC<SparkleProps> = ({ x, y, color, delay, scale }) => {
     return (

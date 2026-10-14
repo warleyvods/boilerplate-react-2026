@@ -65,13 +65,12 @@ function SettingsContent() {
         }
     }, [userSettings, settingsForm]);
 
-    // Update active tab from URL if it changes
-    useEffect(() => {
-        if (tabFromUrl) {
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-            setActiveTab((prev) => (prev !== tabFromUrl ? tabFromUrl : prev));
-        }
-    }, [tabFromUrl]);
+    // Update active tab from URL if it changes (ajuste durante o render, sem effect)
+    const [prevTabFromUrl, setPrevTabFromUrl] = useState(tabFromUrl);
+    if (tabFromUrl !== prevTabFromUrl) {
+        setPrevTabFromUrl(tabFromUrl);
+        if (tabFromUrl) setActiveTab(tabFromUrl);
+    }
 
     const onSettingsSubmit = (data: SettingsFormData) => {
         updateSettings(data);

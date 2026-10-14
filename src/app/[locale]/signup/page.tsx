@@ -21,7 +21,6 @@ function SignupContent() {
     const t = useTranslations('Auth.Signup');
     const { mutate: signup, isPending, error } = useSignup();
     const [isMobile, setIsMobile] = useState(false);
-    const [submitCount, setSubmitCount] = useState(0);
 
     useEffect(() => {
         const checkIsMobile = () => {
@@ -38,14 +37,13 @@ function SignupContent() {
     const {
         register,
         handleSubmit,
-        formState: { errors },
+        formState: { errors, submitCount },
     } = useForm<SignupFormData>({
         resolver: zodResolver(signupSchema),
         mode: 'onBlur',
     });
 
     const onSubmit = (data: SignupFormData) => {
-        setSubmitCount(prev => prev + 1);
         signup(data);
     };
 

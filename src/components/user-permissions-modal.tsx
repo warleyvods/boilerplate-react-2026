@@ -12,8 +12,6 @@ import {
     BarChart3,
     Save,
     Loader2,
-    AlertTriangle,
-    Info,
     Crown,
     Gift,
     XCircle,
@@ -196,7 +194,9 @@ export function UserPermissionsModal({
         });
     };
 
-    const getAccessModeInfo = (mode: string) => {
+    type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
+
+    const getAccessModeInfo = (mode: string): { label: string; color: BadgeVariant; desc: string } => {
         const lowerMode = mode.toLowerCase();
         switch (lowerMode) {
             case 'read_write':
@@ -210,7 +210,7 @@ export function UserPermissionsModal({
         }
     };
 
-    const getPlanInfo = (plan: string) => {
+    const getPlanInfo = (plan: string): { label: string; color: BadgeVariant; desc: string } => {
         switch (plan) {
             case 'FREE':
                 return { label: 'Gratuito', color: 'secondary', desc: 'Funcionalidades básicas' };
@@ -267,7 +267,7 @@ export function UserPermissionsModal({
                                         <div className="mb-4">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="text-sm font-medium">Status atual:</span>
-                                                <Badge variant={getAccessModeInfo(user.metadata?.accessMode || 'READ_WRITE').color as any}>
+                                                <Badge variant={getAccessModeInfo(user.metadata?.accessMode || 'READ_WRITE').color}>
                                                     {getAccessModeInfo(user.metadata?.accessMode || 'READ_WRITE').label}
                                                 </Badge>
                                             </div>
@@ -521,7 +521,7 @@ export function UserPermissionsModal({
                                         <div className="p-4 border rounded-lg bg-muted/50">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-medium">Plano</span>
-                                                <Badge variant={getPlanInfo(localMetadata?.planType || 'FREE').color as any}>
+                                                <Badge variant={getPlanInfo(localMetadata?.planType || 'FREE').color}>
                                                     {getPlanInfo(localMetadata?.planType || 'FREE').label}
                                                 </Badge>
                                             </div>

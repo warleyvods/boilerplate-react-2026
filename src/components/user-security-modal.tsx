@@ -4,8 +4,6 @@ import {
     Shield,
     Loader2,
     CheckCircle,
-    AlertTriangle,
-    Ban,
     Clock,
     AlertCircle
 } from 'lucide-react';
@@ -27,14 +25,12 @@ interface UserSecurityModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     user: User | null;
-    onManagePermissions?: (user: User) => void;
 }
 
 export function UserSecurityModal({
     open,
     onOpenChange,
     user,
-    onManagePermissions
 }: UserSecurityModalProps) {
     const { data: securityInfo, isLoading } = useUserSecurityInfo(
         user?.id || 0,

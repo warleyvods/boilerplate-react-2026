@@ -22,7 +22,9 @@ export function useSignup(onSuccess?: () => void, onError?: () => void) {
             onError?.();
 
             if (error.response?.status === 400) {
-                const details = getApiErrorMessage(error.response?.data);
+                // Erro de validação: prefere a mensagem do primeiro campo (`fields`)
+                const fieldMessage = Object.values(error.response?.data?.fields ?? {})[0];
+                const details = fieldMessage || getApiErrorMessage(error.response?.data);
                 const title = error.response?.data?.title;
 
                 // Erro específico de validação de senha

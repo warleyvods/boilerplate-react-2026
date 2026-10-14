@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useSyncExternalStore } from 'react';
 
 interface SidebarContextType {
     isExpanded: boolean;
@@ -12,37 +12,39 @@ const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 const SIDEBAR_STORAGE_KEY = 'boilerplate-sidebar-expanded';
 
+// A preferência vive no localStorage; useSyncExternalStore lê sem setState em
+// effect e usa `true` (expandida) no servidor e na hidratação.
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+}
+
+function getSnapshot() {
+    try {
+        return localStorage.getItem(SIDEBAR_STORAGE_KEY) !== 'false';
+    } catch {
+        return true;
+    }
+}
+
+function setStoredExpanded(expanded: boolean) {
+    try {
+        localStorage.setItem(SIDEBAR_STORAGE_KEY, expanded.toString());
+    } catch {
+        // localStorage indisponível
+    }
+    listeners.forEach((listener) => listener());
+}
+
 export function SidebarProvider({ children }: { children: ReactNode }) {
-    const [isExpanded, setIsExpanded] = useState(true);
+    const isExpanded = useSyncExternalStore(subscribe, getSnapshot, () => true);
 
-    // Carrega a preferência do localStorage ao montar o componente
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-            if (stored !== null) {
-                setIsExpanded(stored === 'true');
-            }
-        }
-    }, []);
-
-    // Salva a preferência quando o estado muda
-    const handleSetExpanded = (expanded: boolean) => {
-        setIsExpanded(expanded);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(SIDEBAR_STORAGE_KEY, expanded.toString());
-        }
-    };
-
-    const toggleSidebar = () => {
-        const newState = !isExpanded;
-        setIsExpanded(newState);
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(SIDEBAR_STORAGE_KEY, newState.toString());
-        }
-    };
+    const toggleSidebar = () => setStoredExpanded(!isExpanded);
 
     return (
-        <SidebarContext.Provider value={{ isExpanded, setIsExpanded: handleSetExpanded, toggleSidebar }}>
+        <SidebarContext.Provider value={{ isExpanded, setIsExpanded: setStoredExpanded, toggleSidebar }}>
             {children}
         </SidebarContext.Provider>
     );

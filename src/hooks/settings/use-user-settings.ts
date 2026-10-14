@@ -20,28 +20,12 @@ export interface UserSettings {
     };
 }
 
-const mockSettings: UserSettings = {
-    locale: 'pt-BR',
-    currency: 'BRL',
-    notifications: {
-        billDueDateReminderDays: 3,
-        monthlyReportEmail: true,
-    },
-    preferences: {
-        defaultAccountId: null,
-        defaultExpenseCategoryId: null,
-        recurringReminderDays: 5,
-        autoCategorizationEnabled: false,
-        useAverageForVariablePending: false,
-    },
-};
-
 export function useUserSettings() {
     return useQuery({
         queryKey: ['user-settings'],
         queryFn: async () => {
             // Fetch validation: user endpoint returns UserResponseDTO which contains metadata
-            const response = await api.get<any>('/v1/users/me');
+            const response = await api.get<{ metadata?: { locale?: string; currency?: string } | null }>('/v1/users/me');
             const user = response.data;
 
             // Map UserResponseDTO -> SettingsFormData
@@ -86,7 +70,7 @@ export function useUpdateUserSettings() {
             const response = await api.put('/v1/users', payload);
             return response.data;
         },
-        onSuccess: (data) => {
+        onSuccess: () => {
             toast.success(t('settingsSaved'));
             queryClient.invalidateQueries({ queryKey: ['user-settings'] });
             // Optionally update global user store or trigger refresh if needed

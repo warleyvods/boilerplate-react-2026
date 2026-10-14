@@ -11,7 +11,9 @@ export function initiateOAuth2Login(provider: string) {
     const authUrl = `${apiUrl}/oauth2/authorization/${provider}`;
 
     // Redireciona para o backend que irá iniciar o fluxo OAuth2
-    window.location.href = authUrl;
+    // authUrl é absoluta (backend), não uma página do Next
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    window.location.assign(authUrl);
 }
 
 /**

@@ -39,18 +39,18 @@ export function ConfirmDialog({
     showCountdown = false,
     loading = false,
 }: ConfirmDialogProps) {
-    const [countdown, setCountdown] = useState<number>(0);
     const isDelete = type === 'delete';
     const shouldShowCountdown = isDelete && showCountdown;
+    const [countdown, setCountdown] = useState<number>(open && shouldShowCountdown ? 3 : 0);
 
-    // Reset countdown quando abre
-    useEffect(() => {
-        if (open && shouldShowCountdown) {
-            setCountdown(3);
-        } else {
-            setCountdown(0);
-        }
-    }, [open, shouldShowCountdown]);
+    // Reset countdown quando abre (ajuste durante o render, sem effect)
+    const [prevOpen, setPrevOpen] = useState(open);
+    const [prevShouldShowCountdown, setPrevShouldShowCountdown] = useState(shouldShowCountdown);
+    if (open !== prevOpen || shouldShowCountdown !== prevShouldShowCountdown) {
+        setPrevOpen(open);
+        setPrevShouldShowCountdown(shouldShowCountdown);
+        setCountdown(open && shouldShowCountdown ? 3 : 0);
+    }
 
     // Countdown timer
     useEffect(() => {
