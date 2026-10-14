@@ -38,7 +38,7 @@ function SignupContent() {
     const {
         register,
         handleSubmit,
-        formState: { errors, touchedFields },
+        formState: { errors },
     } = useForm<SignupFormData>({
         resolver: zodResolver(signupSchema),
         mode: 'onBlur',
@@ -173,7 +173,6 @@ function SignupContent() {
                             autoComplete="name"
                             placeholder={t('namePlaceholder')}
                             error={errors.name?.message}
-                            touched={touchedFields.name}
                             submitCount={submitCount}
                             required
                             className={isMobile ? 'bg-background border' : 'bg-background/50 backdrop-blur-sm'}
@@ -186,7 +185,6 @@ function SignupContent() {
                             autoComplete="email"
                             placeholder={t('emailPlaceholder')}
                             error={errors.email?.message}
-                            touched={touchedFields.email}
                             submitCount={submitCount}
                             required
                             className={isMobile ? 'bg-background border' : 'bg-background/50 backdrop-blur-sm'}
@@ -198,7 +196,6 @@ function SignupContent() {
                             autoComplete="new-password"
                             placeholder={t('passwordPlaceholder')}
                             error={errors.password?.message}
-                            touched={touchedFields.password}
                             submitCount={submitCount}
                             required
                             className={isMobile ? 'bg-background border' : 'bg-background/50 backdrop-blur-sm'}

@@ -38,7 +38,7 @@ export function ChangePasswordModal({ open, onOpenChange, user }: ChangePassword
         register,
         handleSubmit,
         reset,
-        formState: { errors, touchedFields, submitCount, isValid, isDirty },
+        formState: { errors, submitCount, isValid, isDirty },
     } = useForm<SetPasswordFormData>({
         resolver: zodResolver(setPasswordSchema),
         mode: 'onChange',
@@ -96,7 +96,6 @@ export function ChangePasswordModal({ open, onOpenChange, user }: ChangePassword
                             label="Nova Senha"
                             placeholder="Digite a nova senha"
                             error={errors.password?.message}
-                            touched={touchedFields.password}
                             submitCount={submitCount}
                             required
                             {...register('password')}
@@ -113,7 +112,6 @@ export function ChangePasswordModal({ open, onOpenChange, user }: ChangePassword
                         label="Confirmar Nova Senha"
                         placeholder="Digite a senha novamente"
                         error={errors.confirmPassword?.message}
-                        touched={touchedFields.confirmPassword}
                         submitCount={submitCount}
                         required
                         {...register('confirmPassword')}

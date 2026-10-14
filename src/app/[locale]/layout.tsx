@@ -6,6 +6,7 @@ import "../globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { CustomThemeProvider } from "@/providers/custom-theme-provider";
 import { createThemeScript } from "@/lib/theme-script";
 
@@ -64,7 +65,7 @@ export default async function RootLayout({
               disableTransitionOnChange
             >
               <CustomThemeProvider>
-                {children}
+                <TooltipProvider>{children}</TooltipProvider>
                 <Toaster
                   position="top-right"
                   richColors

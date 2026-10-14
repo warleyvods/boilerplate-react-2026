@@ -40,7 +40,7 @@ function LoginContent() {
     const {
         register,
         handleSubmit,
-        formState: { errors, touchedFields },
+        formState: { errors },
     } = useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
         mode: 'onBlur',
@@ -175,7 +175,6 @@ function LoginContent() {
                             autoComplete="username"
                             placeholder={t('emailPlaceholder')}
                             error={errors.login?.message}
-                            touched={touchedFields.login}
                             submitCount={submitCount}
                             required
                             className={isMobile ? 'bg-background border' : 'bg-background/50 backdrop-blur-sm'}
@@ -187,7 +186,6 @@ function LoginContent() {
                             autoComplete="current-password"
                             placeholder={t('passwordPlaceholder')}
                             error={errors.password?.message}
-                            touched={touchedFields.password}
                             submitCount={submitCount}
                             required
                             className={isMobile ? 'bg-background border' : 'bg-background/50 backdrop-blur-sm'}
