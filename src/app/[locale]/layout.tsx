@@ -9,6 +9,11 @@ import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CustomThemeProvider } from "@/providers/custom-theme-provider";
 import { createThemeScript } from "@/lib/theme-script";
+import { routing } from "@/i18n/routing";
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
