@@ -50,7 +50,7 @@ npx playwright test -g "deve fazer login com sucesso"
 
 ## 📸 Screenshots
 
-Screenshots são salvos automaticamente em `tests/screenshots/` quando:
+Screenshots são salvos em `test-results/screenshots/` (fora do git) quando:
 - Um teste falha (automático)
 - Explicitamente no código do teste (para debug)
 
@@ -77,7 +77,6 @@ tests/
 │       └── login.spec.ts      # Testes de autenticação
 ├── helpers/
 │   └── test-utils.ts          # Utilitários para testes
-├── screenshots/               # Screenshots capturadas
 └── README.md                 # Esta documentação
 ```
 

@@ -34,7 +34,7 @@ test.describe('Autenticação - Cadastro', () => {
     await page.fill('input[name="password"]', testPassword);
 
     // Tira screenshot antes de submeter
-    await page.screenshot({ path: 'tests/screenshots/before-signup.png' });
+    await page.screenshot({ path: 'test-results/screenshots/before-signup.png' });
 
     console.log(`📧 Criando conta com email: ${uniqueEmail}`);
 
@@ -63,7 +63,7 @@ test.describe('Autenticação - Cadastro', () => {
     expect(page.url()).toContain(encodeURIComponent(uniqueEmail));
 
     // Tira screenshot da página de verificação
-    await page.screenshot({ path: 'tests/screenshots/email-verification-page.png' });
+    await page.screenshot({ path: 'test-results/screenshots/email-verification-page.png' });
 
     console.log('✅ Conta criada com sucesso!');
   });
@@ -133,7 +133,7 @@ test.describe('Autenticação - Cadastro', () => {
     await expect(page).toHaveURL(/\/signup$/);
 
     // Tira screenshot do erro
-    await page.screenshot({ path: 'tests/screenshots/signup-duplicate-email-error.png' });
+    await page.screenshot({ path: 'test-results/screenshots/signup-duplicate-email-error.png' });
 
     console.log('✅ Erro de email duplicado exibido corretamente');
   });

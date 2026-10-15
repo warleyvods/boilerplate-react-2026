@@ -24,7 +24,7 @@ test.describe('Autenticação - Login', () => {
     await page.fill('input[name="password"]', ADMIN_PASSWORD);
 
     // Tira screenshot antes de submeter (para debug)
-    await page.screenshot({ path: 'tests/screenshots/before-login.png' });
+    await page.screenshot({ path: 'test-results/screenshots/before-login.png' });
 
     console.log('🔑 Fazendo login...');
 
@@ -44,7 +44,7 @@ test.describe('Autenticação - Login', () => {
     await page.waitForSelector('text=Dashboard', { timeout: 10000 });
 
     // Tira screenshot do dashboard (para confirmar sucesso)
-    await page.screenshot({ path: 'tests/screenshots/dashboard-after-login.png' });
+    await page.screenshot({ path: 'test-results/screenshots/dashboard-after-login.png' });
 
     console.log('✅ Login realizado com sucesso!');
   });
